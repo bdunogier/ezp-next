@@ -182,7 +182,6 @@ class ContentService implements APIContentService, Sessionable
                 'mainLanguageCode' => $restContentInfo->mainLanguageCode,
                 'mainLocationId' => $restContentInfo->mainLocationId,
                 'sectionId' => $restContentInfo->sectionId,
-
                 'currentVersionNo' => $versionUrlValues['version'],
             )
         );
