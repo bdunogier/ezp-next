@@ -165,12 +165,10 @@ class ContentService implements APIContentService, Sessionable
     protected function completeContentInfo( Values\RestContentInfo $restContentInfo )
     {
         $versionUrlValues = $this->requestParser->parse(
-            'objectVersion',
             $this->fetchCurrentVersionUrl( $restContentInfo->currentVersionReference )
         );
 
-        return new Values\Content\ContentInfo(
-            $this->contentTypeService,
+        return new ContentInfo(
             array(
                 'id' => $restContentInfo->id,
                 'name' => $restContentInfo->name,
@@ -202,12 +200,19 @@ class ContentService implements APIContentService, Sessionable
     {
         $versionResponse = $this->client->request(
             'GET',
-            $currentVersionReference
+            $currentVersionReference,
+            new Message( array( 'Accept' => '*/*' ) )
         );
 
         if ( $this->isErrorResponse( $versionResponse ) )
         {
             return $this->inputDispatcher->parse( $versionResponse );
+        }
+
+        if ( $versionResponse->statusCode > 400 )
+        {
+            echo $versionResponse->body;
+            throw new \Exception();
         }
 
         return $versionResponse->headers['Location'];
