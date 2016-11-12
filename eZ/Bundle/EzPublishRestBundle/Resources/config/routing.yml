@@ -1147,3 +1147,10 @@ ezpublish_rest_loadCountryList:
     defaults:
         _controller: ezpublish_rest.controller.services:loadCountryList
     methods: [GET]
+
+# Query
+ezpublish_rest_queryContent:
+    path: /query/{searchType}/{queryTypeName}
+    defaults:
+        _controller: ezpublish_rest.controller.query:queryAction
+    methods: [GET]

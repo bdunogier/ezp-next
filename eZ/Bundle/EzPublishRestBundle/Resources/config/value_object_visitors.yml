@@ -151,6 +151,7 @@ parameters:
     # View
     ezpublish_rest.output.value_object_visitor.ViewInput.class: eZ\Publish\Core\REST\Client\Output\ValueObjectVisitor\ViewInput
 
+    ezpublish_rest.output.value_object_visitor.search_result.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\SearchResult
 
 services:
     ezpublish_rest.output.value_object_visitor.base:
@@ -711,6 +712,13 @@ services:
         arguments: [ "@ezpublish.api.service.location", "@ezpublish.api.service.content", "@ezpublish.api.service.content_type" ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Server\Values\RestExecutedView }
+
+    ezpublish_rest.output.value_object_visitor.search_result:
+        parent: ezpublish_rest.output.value_object_visitor.base
+        class: "%ezpublish_rest.output.value_object_visitor.search_result.class%"
+        arguments: [ "@ezpublish.api.service.location", "@ezpublish.api.service.content", "@ezpublish.api.service.content_type" ]
+        tags:
+            - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Values\Content\Search\SearchResult }
 
     # Object state
     ezpublish_rest.output.value_object_visitor.ObjectStateGroup:

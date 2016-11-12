@@ -23,6 +23,7 @@ parameters:
     ezpublish_rest.controller.options.class: eZ\Publish\Core\REST\Server\Controller\Options
     ezpublish_rest.controller.services.class: eZ\Publish\Core\REST\Server\Controller\Services
     ezpublish_rest.controller.views.class: eZ\Publish\Core\REST\Server\Controller\Views
+    ezpublish_rest.controller.query.class: eZ\Publish\Core\REST\Server\Controller\QueryController
 
     ezpublish_rest.factory.class: eZ\Bundle\EzPublishRestBundle\ApiLoader\Factory
     ezpublish_rest.request_parser.class: eZ\Bundle\EzPublishRestBundle\RequestParser\Router
@@ -223,6 +224,13 @@ services:
         parent: ezpublish_rest.controller.base
         arguments:
             - "@ezpublish.api.service.search"
+
+    ezpublish_rest.controller.query:
+        class: "%ezpublish_rest.controller.query.class%"
+        parent: ezpublish_rest.controller.base
+        arguments:
+            - "@ezpublish.api.service.search"
+            - "@ezpublish.query_type.registry"
 
     ezpublish_rest.controller.session:
         class: eZ\Publish\Core\REST\Server\Controller\SessionController
