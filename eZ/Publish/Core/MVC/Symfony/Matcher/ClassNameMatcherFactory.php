@@ -8,11 +8,16 @@
  */
 namespace eZ\Publish\Core\MVC\Symfony\Matcher;
 
+use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Configuration\Parser\ContentView;
+use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Configuration\SiteAccessAware\ConfigurationProcessor;
 use eZ\Publish\API\Repository\Repository;
 use eZ\Publish\Core\MVC\RepositoryAwareInterface;
 use eZ\Publish\Core\MVC\Symfony\View\View;
 use SplObjectStorage;
 use InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * A matcher factory based on namespaces: matchers will be searched for as classes.
@@ -55,11 +60,29 @@ class ClassNameMatcherFactory implements MatcherFactoryInterface
      */
     protected $alreadyMatched = [];
 
+    private $dynamicMatchConfig = [];
+
     public function __construct(Repository $repository, $relativeNamespace = null, array $matchConfig = [])
     {
         $this->repository = $repository;
         $this->matcherRelativeNamespace = $relativeNamespace;
         $this->matchConfig = $matchConfig;
+
+        // Need to know about the siteaccess. Also need to parse dependencies by SA.
+        // This requires quite a bit of the ConfigLoader code. Can we re-use it somehow ?
+        // We can use the ConfigParser, but we need to feed it with a fake container
+        $file = file_exists('../app/config/views.yml') ? '../app/config/views.yml' : 'app/config/views.yml';
+        $config = Yaml::parse(file_get_contents($file));
+        if (isset($config['ezpublish'])) {
+            $parameterBag = new ParameterBag();
+            $container = new Container($parameterBag);
+            $processor = new ConfigurationProcessor($container, 'ezsettings');
+            $processor->mapConfig($config['ezpublish'], new ContentView());
+            $dynamicConfig = $container->getParameterBag()->all();
+            if (isset($dynamicConfig['ezsettings.default.content_view'])) {
+                $this->dynamicMatchConfig = $dynamicConfig['ezsettings.default.content_view'];
+            }
+        }
     }
 
     /**
@@ -111,7 +134,7 @@ class ClassNameMatcherFactory implements MatcherFactoryInterface
     {
         $viewType = $view->getViewType();
 
-        if (!isset($this->matchConfig[$viewType])) {
+        if (!isset($this->matchConfig[$viewType]) && !isset($this->dynamicMatchConfig[$viewType])) {
             return null;
         }
 
@@ -124,19 +147,24 @@ class ClassNameMatcherFactory implements MatcherFactoryInterface
             return $this->alreadyMatched[$viewType][$view];
         }
 
-        foreach ($this->matchConfig[$viewType] as $configHash) {
-            $hasMatched = true;
-            $matcher = null;
-            foreach ($configHash['match'] as $matcherIdentifier => $value) {
-                $matcher = $this->getMatcher($matcherIdentifier);
-                $matcher->setMatchingConfig($value);
-                if (!$matcher->match($view)) {
-                    $hasMatched = false;
-                }
+        foreach ([$this->matchConfig, $this->dynamicMatchConfig] as $config) {
+            if (!isset($config[$viewType])) {
+                continue;
             }
+            foreach ($config[$viewType] as $configHash) {
+                $hasMatched = true;
+                $matcher = null;
+                foreach ($configHash['match'] as $matcherIdentifier => $value) {
+                    $matcher = $this->getMatcher($matcherIdentifier);
+                    $matcher->setMatchingConfig($value);
+                    if (!$matcher->match($view)) {
+                        $hasMatched = false;
+                    }
+                }
 
-            if ($hasMatched) {
-                return $this->alreadyMatched[$viewType][$view] = $configHash + array('matcher' => $matcher);
+                if ($hasMatched) {
+                    return $this->alreadyMatched[$viewType][$view] = $configHash + array('matcher' => $matcher);
+                }
             }
         }
 

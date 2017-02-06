@@ -33,6 +33,7 @@ use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\TranslationCollec
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\ViewProvidersPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\RichTextHtml5ConverterPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\StorageConnectionPass;
+use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\DynamicFileResourcePass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Configuration\ComplexSettings\ComplexSettingParser;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Configuration\SiteAccessAware\DynamicSettingParser;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Security\PolicyProvider\RepositoryPolicyProvider;
@@ -100,6 +101,7 @@ class EzPublishCoreBundle extends Bundle
         $securityExtension = $container->getExtension('security');
         $securityExtension->addSecurityListenerFactory(new HttpBasicFactory());
         $container->addCompilerPass(new TranslationCollectorPass());
+        $container->addCompilerPass(new DynamicFileResourcePass());
     }
 
     public function getContainerExtension()
