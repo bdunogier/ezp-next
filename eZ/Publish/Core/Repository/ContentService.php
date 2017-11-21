@@ -1935,20 +1935,11 @@ class ContentService implements ContentServiceInterface
             }
             // check if the specified translation is the only one
             if (count($versionInfo->languageCodes) < 2) {
-                $singleLangVersions[] = $versionInfo->versionNo;
+                $singleLangVersions[] = $versionInfo;
             } else {
                 // otherwise add Version to the list of valid Versions to be processed
                 $versions[] = $versionInfo->versionNo;
             }
-        }
-
-        if (!empty($singleLangVersions)) {
-            $verList = implode(', ', $singleLangVersions);
-            throw new BadStateException(
-                '$languageCode',
-                "The Version(s): {$verList} of the ContentId={$contentInfo->id} have only one language {$languageCode}. Remove these Version(s) before proceeding.\n" .
-                "Hint: Command 'ezplatform:remove-content-translation' handles this for you, look into it to see how this can be handled in custom code."
-            );
         }
 
         // if there are no Versions with the given translation, $languageCode arg is invalid
@@ -1964,6 +1955,11 @@ class ContentService implements ContentServiceInterface
 
         $this->repository->beginTransaction();
         try {
+            // delete all Versions which contain only single language to be removed
+            foreach ($singleLangVersions as $versionInfo) {
+                $this->deleteVersion($versionInfo);
+            }
+
             $this->persistenceHandler->contentHandler()->deleteTranslationFromContent($contentInfo->id, $languageCode);
             $locationIds = array_map(
                 function (Location $location) {
@@ -1973,6 +1969,12 @@ class ContentService implements ContentServiceInterface
             );
             $this->persistenceHandler->urlAliasHandler()->translationRemoved($locationIds, $languageCode);
             $this->repository->commit();
+        } catch (BadStateException $e) {
+            $this->repository->rollback();
+            throw $e;
+        } catch (UnauthorizedException $e) {
+            $this->repository->rollback();
+            throw $e;
         } catch (Exception $e) {
             $this->repository->rollback();
             // cover generic unexpected exception to fulfill API promise on @throws
