@@ -1916,59 +1916,68 @@ class ContentService implements ContentServiceInterface
         // before actual removal, collect information on Versions
         $versions = [];
         $singleLangVersions = [];
-        foreach ($this->loadVersions($contentInfo) as $versionInfo) {
-            // check if user is authorized to delete Version
-            if (!$this->repository->canUser('content', 'remove', $versionInfo)) {
-                throw new UnauthorizedException(
-                    'content',
-                    'remove',
-                    [
-                        'contentId' => $contentInfo->id,
-                        'versionNo' => $versionInfo->versionNo,
-                    ]
-                );
-            }
-            // check if the specified translation exists for the Version
-            if (!in_array($languageCode, $versionInfo->languageCodes)) {
-                // if translation does not exist, simply ignore Version (see InvalidArgumentException later on)
-                continue;
-            }
-            // check if the specified translation is the only one
-            if (count($versionInfo->languageCodes) < 2) {
-                $singleLangVersions[] = $versionInfo;
-            } else {
-                // otherwise add Version to the list of valid Versions to be processed
-                $versions[] = $versionInfo->versionNo;
-            }
-        }
-
-        // if there are no Versions with the given translation, $languageCode arg is invalid
-        if (empty($versions)) {
-            throw new InvalidArgumentException(
-                '$languageCode',
-                sprintf(
-                    'Specified translation does not exist in the Content Object(id=%d)',
-                     $contentInfo->id
-                )
-            );
-        }
-
         $this->repository->beginTransaction();
         try {
+            foreach ($this->loadVersions($contentInfo) as $versionInfo) {
+                // check if user is authorized to delete Version
+                if (!$this->repository->canUser('content', 'remove', $versionInfo)) {
+                    throw new UnauthorizedException(
+                        'content',
+                        'remove',
+                        [
+                            'contentId' => $contentInfo->id,
+                            'versionNo' => $versionInfo->versionNo,
+                        ]
+                    );
+                }
+                // check if the specified translation exists for the Version
+                if (!in_array($languageCode, $versionInfo->languageCodes)) {
+                    // if translation does not exist, simply ignore Version (see InvalidArgumentException later on)
+                    continue;
+                }
+                // check if the specified translation is the only one
+                if (count($versionInfo->languageCodes) < 2) {
+                    $singleLangVersions[] = $versionInfo;
+                } else {
+                    // otherwise add Version to the list of valid Versions to be processed
+                    $versions[] = $versionInfo->versionNo;
+                }
+            }
+
+            // if there are no Versions with the given translation, $languageCode arg is invalid
+            if (empty($versions)) {
+                throw new InvalidArgumentException(
+                    '$languageCode',
+                    sprintf(
+                        'Specified translation does not exist in the Content Object(id=%d)',
+                        $contentInfo->id
+                    )
+                );
+            }
+
             // delete all Versions which contain only single language to be removed
             foreach ($singleLangVersions as $versionInfo) {
                 $this->deleteVersion($versionInfo);
             }
 
-            $this->persistenceHandler->contentHandler()->deleteTranslationFromContent($contentInfo->id, $languageCode);
+            $this->persistenceHandler->contentHandler()->deleteTranslationFromContent(
+                $contentInfo->id,
+                $languageCode
+            );
             $locationIds = array_map(
                 function (Location $location) {
                     return $location->id;
                 },
                 $this->repository->getLocationService()->loadLocations($contentInfo)
             );
-            $this->persistenceHandler->urlAliasHandler()->translationRemoved($locationIds, $languageCode);
+            $this->persistenceHandler->urlAliasHandler()->translationRemoved(
+                $locationIds,
+                $languageCode
+            );
             $this->repository->commit();
+        } catch (InvalidArgumentException $e) {
+            $this->repository->rollback();
+            throw $e;
         } catch (BadStateException $e) {
             $this->repository->rollback();
             throw $e;
