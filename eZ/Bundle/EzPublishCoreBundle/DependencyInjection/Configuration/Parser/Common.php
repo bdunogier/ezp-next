@@ -113,6 +113,8 @@ class Common extends AbstractParser implements SuggestionCollectorAwareInterface
                 ->info('The default page to show, e.g. after user login this will be used for default redirection. If provided, will override "default_target_path" from security.yml.')
                 ->example('/Getting-Started')
             ->end()
+            // TODO do not load if ezplatform-http-cache is enabled
+            /*
             ->arrayNode('http_cache')
                 ->info('Settings related to Http cache')
                 ->children()
@@ -124,6 +126,7 @@ class Common extends AbstractParser implements SuggestionCollectorAwareInterface
                     ->end()
                 ->end()
             ->end()
+            */
             ->scalarNode('anonymous_user_id')
                 ->cannotBeEmpty()
                 ->example('10')
