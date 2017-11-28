@@ -1913,9 +1913,8 @@ class ContentService implements ContentServiceInterface
                 'Specified translation is the main translation of the Content Object'
             );
         }
-        // before actual removal, collect information on Versions
-        $versions = [];
-        $singleLangVersions = [];
+
+        $translationWasFound = false;
         $this->repository->beginTransaction();
         try {
             foreach ($this->loadVersions($contentInfo) as $versionInfo) {
@@ -1924,40 +1923,34 @@ class ContentService implements ContentServiceInterface
                     throw new UnauthorizedException(
                         'content',
                         'remove',
-                        [
-                            'contentId' => $contentInfo->id,
-                            'versionNo' => $versionInfo->versionNo,
-                        ]
+                        ['contentId' => $contentInfo->id, 'versionNo' => $versionInfo->versionNo]
                     );
                 }
-                // check if the specified translation exists for the Version
+
                 if (!in_array($languageCode, $versionInfo->languageCodes)) {
-                    // if translation does not exist, simply ignore Version (see InvalidArgumentException later on)
                     continue;
                 }
-                // check if the specified translation is the only one
+
+                $translationWasFound = true;
+
+                // If the translation is the version's only one, delete the version
                 if (count($versionInfo->languageCodes) < 2) {
-                    $singleLangVersions[] = $versionInfo;
-                } else {
-                    // otherwise add Version to the list of valid Versions to be processed
-                    $versions[] = $versionInfo->versionNo;
+                    $this->persistenceHandler->contentHandler()->deleteVersion(
+                        $versionInfo->getContentInfo()->id,
+                        $versionInfo->versionNo
+                    );
                 }
             }
 
-            // if there are no Versions with the given translation, $languageCode arg is invalid
-            if (empty($versions)) {
+            if (!$translationWasFound) {
                 throw new InvalidArgumentException(
                     '$languageCode',
                     sprintf(
-                        'Specified translation does not exist in the Content Object(id=%d)',
+                        '%s does not exist in the Content item(id=%d)',
+                        $languageCode,
                         $contentInfo->id
                     )
                 );
-            }
-
-            // delete all Versions which contain only single language to be removed
-            foreach ($singleLangVersions as $versionInfo) {
-                $this->deleteVersion($versionInfo);
             }
 
             $this->persistenceHandler->contentHandler()->deleteTranslationFromContent(
