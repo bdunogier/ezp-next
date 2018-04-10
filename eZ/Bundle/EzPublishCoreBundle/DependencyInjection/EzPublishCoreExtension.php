@@ -342,7 +342,6 @@ class EzPublishCoreExtension extends Extension
         $coreLoader->load('roles.yml');
         $coreLoader->load('storage_engines/common.yml');
         $coreLoader->load('storage_engines/cache.yml');
-        $coreLoader->load('storage_engines/legacy.yml');
         $coreLoader->load('storage_engines/shortcuts.yml');
         $coreLoader->load('search_engines/common.yml');
         $coreLoader->load('utils.yml');
