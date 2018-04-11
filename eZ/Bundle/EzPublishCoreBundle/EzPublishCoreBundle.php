@@ -86,6 +86,8 @@ class EzPublishCoreBundle extends Bundle
         $container->addCompilerPass(new FieldValueConverterRegistryPass());
         $container->addCompilerPass(new RoleLimitationConverterPass());
         $container->addCompilerPass(new QueryTypePass());
+        $container->addCompilerPass(new FieldRegistryPass());
+        $container->addCompilerPass(new SearchEngineSignalSlotPass('legacy'));
 
         $securityExtension = $container->getExtension('security');
         $securityExtension->addSecurityListenerFactory(new HttpBasicFactory());
