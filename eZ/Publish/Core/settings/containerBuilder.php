@@ -38,7 +38,6 @@ $loader->load('repository/signalslot.yml');
 $loader->load('roles.yml');
 $loader->load('storage_engines/common.yml');
 $loader->load('storage_engines/cache.yml');
-$loader->load('storage_engines/legacy.yml');
 $loader->load('storage_engines/shortcuts.yml');
 $loader->load('search_engines/common.yml');
 $loader->load('settings.yml');
@@ -72,8 +71,6 @@ $containerBuilder->addCompilerPass(new Compiler\FieldTypeNameableCollectionPass(
 $containerBuilder->addCompilerPass(new Compiler\RegisterLimitationTypePass());
 
 $containerBuilder->addCompilerPass(new Compiler\Storage\ExternalStorageRegistryPass());
-$containerBuilder->addCompilerPass(new Compiler\Storage\Legacy\FieldValueConverterRegistryPass());
-$containerBuilder->addCompilerPass(new Compiler\Storage\Legacy\RoleLimitationConverterPass());
 
 $containerBuilder->addCompilerPass(new Compiler\Search\Legacy\CriteriaConverterPass());
 $containerBuilder->addCompilerPass(new Compiler\Search\Legacy\CriterionFieldValueHandlerRegistryPass());
